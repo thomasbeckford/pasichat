@@ -25,7 +25,6 @@ export default function Chat() {
       maxSteps: 2,
       onToolCall({ toolCall }) {
         setToolCall(toolCall.toolName);
-        console.log("Tool called:", toolCall.toolName);
       },
       onError: (error) => {
         console.error("Chat error:", error);
@@ -34,7 +33,6 @@ export default function Chat() {
         );
       },
       onFinish: () => {
-        console.log("Chat finished, messages:", messages);
         setToolCall(undefined);
         setTimeout(() => {
           inputRef.current?.focus();
@@ -101,16 +99,15 @@ export default function Chat() {
         </motion.div>
 
         {/* Document Upload */}
-        {process.env.UPLOAD_DOCUMENT ? (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="w-full mb-6"
-          >
-            <DocumentUpload />
-          </motion.div>
-        ) : null}
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="w-full mb-6"
+        >
+          <DocumentUpload />
+        </motion.div>
 
         {/* Chat Container */}
         <motion.div
