@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Message } from "ai";
-import { useChat } from "ai/react";
+import { Message, useChat } from "@ai-sdk/react";
 import { motion } from "framer-motion";
 import { Bot, Brain, Database, Plus, Send, User } from "lucide-react";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -23,17 +22,20 @@ export default function Chat() {
 
   const { messages, input, handleInputChange, handleSubmit, isLoading } =
     useChat({
-      maxSteps: 4,
+      maxSteps: 2,
       onToolCall({ toolCall }) {
         setToolCall(toolCall.toolName);
+        console.log("Tool called:", toolCall.toolName);
       },
       onError: (error) => {
+        console.error("Chat error:", error);
         toast.error(
           "Has alcanzado el límite de velocidad, inténtalo más tarde"
         );
       },
       onFinish: () => {
-        console.log("onFinish");
+        console.log("Chat finished, messages:", messages);
+        setToolCall(undefined);
         setTimeout(() => {
           inputRef.current?.focus();
         }, 100);
@@ -66,15 +68,6 @@ export default function Chat() {
     return undefined;
   }, [toolCall, messages]);
 
-  const awaitingResponse = useMemo(() => {
-    return (
-      isLoading &&
-      currentToolCall === undefined &&
-      messages.length > 0 &&
-      messages.slice(-1)[0].role === "user"
-    );
-  }, [isLoading, currentToolCall, messages]);
-
   const conversationHistory = useMemo(() => {
     const pairs = [];
     for (let i = 0; i < messages.length; i += 2) {
@@ -88,7 +81,12 @@ export default function Chat() {
   }, [messages]);
 
   const lastPair = conversationHistory[conversationHistory.length - 1];
-  const showLoading = awaitingResponse || currentToolCall;
+
+  // Lógica de loading simplificada
+  const showLoading =
+    isLoading &&
+    messages.length > 0 &&
+    messages[messages.length - 1]?.role === "user";
 
   return (
     <div className="flex justify-center items-start min-h-screen w-full bg-gradient-to-br from-background to-muted/20 px-4 md:px-0 py-4">
@@ -113,6 +111,7 @@ export default function Chat() {
             <DocumentUpload />
           </motion.div>
         ) : null}
+
         {/* Chat Container */}
         <motion.div
           layout
@@ -181,12 +180,11 @@ export default function Chat() {
                   onSubmit={(e) => {
                     e.preventDefault();
                     if (!input.trim()) return;
-                    const currentTarget = e.currentTarget;
 
                     handleSubmit(e, {
                       body: {
                         fallback:
-                          "Im sorry, I don't have any information about that in my knowledge base.",
+                          "Lo siento, no tengo información sobre eso en mi base de conocimiento.",
                       },
                     });
                   }}
@@ -195,7 +193,7 @@ export default function Chat() {
                   <Input
                     ref={inputRef}
                     className="flex-1 bg-background"
-                    placeholder="Ask me anything..."
+                    placeholder="Pregúntame cualquier cosa..."
                     value={input}
                     onChange={handleInputChange}
                     disabled={isLoading}
@@ -221,11 +219,10 @@ export default function Chat() {
                   >
                     <div className="space-y-2">
                       <p className="text-sm">
-                        Hello! Im your intelligent assistant.
+                        ¡Hola! Soy tu asistente inteligente.
                       </p>
                       <p className="text-xs">
-                        You can upload documents and ask me questions about
-                        them.
+                        Puedes subir documentos y hacerme preguntas sobre ellos.
                       </p>
                     </div>
                   </motion.div>
@@ -257,36 +254,25 @@ export default function Chat() {
 const AssistantMessage = ({ message }: { message: Message | undefined }) => {
   if (!message) return null;
 
+  console.log("Assistant message:", message);
+
+  // Si no hay contenido, mostrar que está procesando
+  if (!message.content) {
+    return (
+      <div className="flex items-center gap-2 text-muted-foreground">
+        <LoadingIcon />
+        <span className="text-sm">Procesando información...</span>
+      </div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className="prose prose-sm max-w-none dark:prose-invert"
     >
-      <MemoizedReactMarkdown
-        components={{
-          p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-          ul: ({ children }) => (
-            <ul className="mb-2 last:mb-0 space-y-1">{children}</ul>
-          ),
-          ol: ({ children }) => (
-            <ol className="mb-2 last:mb-0 space-y-1">{children}</ol>
-          ),
-          li: ({ children }) => <li className="text-sm">{children}</li>,
-          code: ({ children }) => (
-            <code className="bg-muted px-1 py-0.5 rounded text-xs font-mono">
-              {children}
-            </code>
-          ),
-          pre: ({ children }) => (
-            <pre className="bg-muted p-2 rounded-md overflow-x-auto text-xs">
-              {children}
-            </pre>
-          ),
-        }}
-      >
-        {message.content}
-      </MemoizedReactMarkdown>
+      <div className="text-sm whitespace-pre-wrap">{message.content}</div>
     </motion.div>
   );
 };

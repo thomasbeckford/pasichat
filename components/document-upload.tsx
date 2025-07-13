@@ -32,6 +32,41 @@ interface UploadState {
   error?: string;
 }
 
+const consolidateChunks = (chunks: string[]): string[] => {
+  const minChunkSize = 300; // Mínimo 300 caracteres por chunk
+  const maxChunkSize = 1500; // Máximo 1500 caracteres por chunk
+  const consolidated: string[] = [];
+  let currentChunk = "";
+
+  for (const chunk of chunks) {
+    // Limpiar el chunk
+    const cleanChunk = chunk
+      .replace(/\[Página \d+\]/g, "")
+      .replace(/^\d+\s+/, "")
+      .trim();
+
+    if (!cleanChunk) continue;
+
+    // Si agregar este chunk no excede el máximo, agregarlo
+    if (currentChunk.length + cleanChunk.length < maxChunkSize) {
+      currentChunk += (currentChunk ? " " : "") + cleanChunk;
+    } else {
+      // Si el chunk actual es suficientemente grande, guardarlo
+      if (currentChunk.length >= minChunkSize) {
+        consolidated.push(currentChunk);
+      }
+      currentChunk = cleanChunk;
+    }
+  }
+
+  // Agregar el último chunk si no está vacío
+  if (currentChunk.length >= minChunkSize) {
+    consolidated.push(currentChunk);
+  }
+
+  return consolidated;
+};
+
 export function DocumentUpload() {
   const [file, setFile] = useState<File | null>(null);
   const [uploadState, setUploadState] = useState<UploadState>({
@@ -122,20 +157,23 @@ export function DocumentUpload() {
         throw new Error("No se pudo extraer texto del PDF");
       }
 
+      // NUEVO: Combinar chunks pequeños en secciones más grandes
+      const consolidatedChunks = consolidateChunks(chunks);
+
       setUploadState((prev) => ({
         ...prev,
         status: "uploading",
-        totalChunks: chunks.length,
+        totalChunks: consolidatedChunks.length,
         progress: 20,
       }));
 
       let saved = 0;
-      for (const chunk of chunks) {
+      for (const chunk of consolidatedChunks) {
         try {
           await createResource({ content: chunk });
           saved++;
 
-          const progress = 20 + (saved / chunks.length) * 80;
+          const progress = 20 + (saved / consolidatedChunks.length) * 80;
           setUploadState((prev) => ({
             ...prev,
             processedChunks: saved,
