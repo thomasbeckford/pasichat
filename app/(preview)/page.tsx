@@ -221,7 +221,7 @@ export default function Chat() {
                   >
                     <div className="space-y-2">
                       <p className="text-sm">
-                        Hello! I'm your intelligent assistant.
+                        Hello! Im your intelligent assistant.
                       </p>
                       <p className="text-xs">
                         You can upload documents and ask me questions about
