@@ -1,3 +1,5 @@
+"use server";
+
 import { openai } from "@ai-sdk/openai";
 import { embed, embedMany } from "ai";
 import { cosineDistance, desc, gt, sql } from "drizzle-orm";

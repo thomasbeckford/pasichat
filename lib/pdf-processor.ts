@@ -1,3 +1,5 @@
+"use client";
+
 import * as pdfjsLib from "pdfjs-dist";
 import type { TextItem } from "pdfjs-dist/types/src/display/api";
 

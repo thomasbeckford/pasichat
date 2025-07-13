@@ -3,14 +3,21 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createResource } from "@/lib/actions/resources";
-import { extractTextFromPDF } from "@/lib/pdf-processor";
 import { FileIcon, UploadIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 export function DocumentUpload() {
   const [isUploading, setIsUploading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
+
+  const [pdfProcessor, setPdfProcessor] = useState<any>(null);
+
+  useEffect(() => {
+    import("@/lib/pdf-processor").then((mod) => {
+      setPdfProcessor(() => mod.extractTextFromPDF);
+    });
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -42,7 +49,7 @@ export function DocumentUpload() {
     try {
       // Extraer texto del PDF en el cliente
       toast.info("Procesando PDF...");
-      const chunks = await extractTextFromPDF(file);
+      const chunks = await pdfProcessor(file);
 
       if (chunks.length === 0) {
         toast.error("No se pudo extraer texto del PDF");
